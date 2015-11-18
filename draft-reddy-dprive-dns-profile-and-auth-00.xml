@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+<?rfc toc="yes"?>
+<?rfc tocompact="yes"?>
+<?rfc tocdepth="3"?>
+<?rfc tocindent="yes"?>
+<?rfc symrefs="yes"?>
+<?rfc sortrefs="yes"?>
+<?rfc comments="yes"?>
+<?rfc inline="yes"?>
+<?rfc compact="yes"?>
+<?rfc subcompact="no"?>
+<rfc category="std" docName="draft-reddy-dprive-dns-profile-and-auth-00"
+     ipr="trust200902">
+  <front>
+    <title abbrev="DPRIVE (D)TLS profile and DNS server auth">DPRIVE TLS/DTLS
+    Profile and DNS server authentication</title>
+
+    <author fullname="Tirumaleswar Reddy" initials="T." surname="Reddy">
+      <organization abbrev="Cisco">Cisco Systems, Inc.</organization>
+
+      <address>
+        <postal>
+          <street>Cessna Business Park, Varthur Hobli</street>
+
+          <street>Sarjapur Marathalli Outer Ring Road</street>
+
+          <city>Bangalore</city>
+
+          <region>Karnataka</region>
+
+          <code>560103</code>
+
+          <country>India</country>
+        </postal>
+
+        <email>tireddy@cisco.com</email>
+      </address>
+    </author>
+
+    <author fullname="Sara Dickinson" initials="S." surname="Dickinson">
+      <organization>Sinodun Internet Technologies</organization>
+
+      <address>
+        <postal>
+          <street>Magdalen Centre</street>
+
+          <street>Oxford Science Park</street>
+
+          <city>Oxford</city>
+
+          <code>OX4 4GA</code>
+
+          <country>UK</country>
+        </postal>
+
+        <email>sara@sinodun.com</email>
+      </address>
+    </author>
+
+    <author fullname="Dan Wing" initials="D." surname="Wing">
+      <organization abbrev="Cisco">Cisco Systems, Inc.</organization>
+
+      <address>
+        <postal>
+          <street>170 West Tasman Drive</street>
+
+          <city>San Jose</city>
+
+          <region>California</region>
+
+          <code>95134</code>
+
+          <country>USA</country>
+        </postal>
+
+        <email>dwing@cisco.com</email>
+      </address>
+    </author>
+
+    <author fullname="Prashanth Patil" initials="P." surname="Patil">
+      <organization abbrev="Cisco">Cisco Systems, Inc.</organization>
+
+      <address>
+        <postal>
+          <street></street>
+
+          <street></street>
+
+          <city>Bangalore</city>
+
+          <country>India</country>
+        </postal>
+
+        <email>praspati@cisco.com</email>
+      </address>
+    </author>
+
+    <date />
+
+    <workgroup>DPRIVE</workgroup>
+
+    <abstract>
+      <t>This document defines a Transport Layer Security (TLS) and Datagram
+      TLS (DTLS) 1.2 profile for providing DNS privacy, and mechanisms the DNS
+      client can use to authenticate the server providing DNS privacy.</t>
+    </abstract>
+  </front>
+
+  <middle>
+    <section anchor="introduction" title="Introduction">
+      <t>The DPRIVE working group has two active documents that provide DNS
+      confidentiality, DNS over DTLS <xref
+      target="I-D.ietf-dprive-dnsodtls"></xref> and DNS over TLS <xref
+      target="I-D.ietf-dprive-dns-over-tls"></xref>.</t>
+
+      <t>This document defines a profile of DTLS 1.2 <xref
+      target="RFC6347"></xref> and TLS 1.2 <xref target="RFC5246"></xref> that
+      offers DNS privacy. This profile defines the configuration options and
+      protocol extensions to perform connection handshakes with the fewest
+      round trips while maintaining privacy. It also discusses mechanisms the
+      DNS client can use to authenticate the server providing DNS privacy.</t>
+    </section>
+
+    <section anchor="term" title="Terminology">
+      <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+      "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+      "OPTIONAL" in this document are to be interpreted as described in <xref
+      target="RFC2119"></xref>.</t>
+    </section>
+
+    <section title="(D)TLS Profile">
+      <t>This section defines the profile of DNS over DTLS and of DNS over
+      TLS. Implementations compliant with this profile MUST implement all of
+      the following items:<list style="symbols">
+          <t><xref target="RFC7250">Raw public keys</xref>, which reduce the
+          size of the ServerHello, and cannot obtain certificates (e.g., DNS
+          resolvers on private networks). DNS client and DNS resolver need to
+          support <xref target="RFC7250"></xref>, and raw public key-based
+          authentication mechanism defined in <xref target="RFC7250"></xref>
+          can be used by the client to authenticate the DNS resolver. DNS
+          client needs to be configured with the SubjectPublicKeyInfo
+          fingerprint of the DNS resolver, and;</t>
+
+          <t>The interaction between the DNS client and the DNS server
+          requires Transport Layer Security (TLS) and Datagram Transport Layer
+          Security (DTLS) with a ciphersuite offering confidentiality
+          protection and the guidance given in <xref target="RFC7525"></xref>
+          must be followed to avoid attacks on (D)TLS.</t>
+        </list></t>
+
+      <t>It is RECOMMENDED to implement the following items to improve
+      performance:</t>
+
+      <t><list style="symbols">
+          <t><xref target="RFC5077">TLS session resumption without server-side
+          state</xref>, which eliminates the need for the server to retain
+          cryptographic state for longer than necessary, and;</t>
+
+          <t><xref target="I-D.ietf-tls-falsestart">TLS False Start</xref>,
+          which reduces round-trips by allowing the TLS second flight of
+          messages (ChangeCipherSpec) to also contain the (encrypted) DNS
+          query, and;</t>
+
+          <t><xref target="I-D.ietf-tls-cached-info">Cached Information
+          Extension</xref>, which avoids transmitting the server's certificate
+          and certificate chain if the client has cached that information from
+          a previous TLS handshake.</t>
+        </list></t>
+    </section>
+
+    <section title="Authenticating the DNS Privacy Server">
+      <t>DNS privacy requires encrypting the query (and response) from passive
+      attacks. Such encryption typically provides integrity protection as a
+      side-effect, which means on-path attackers cannot simply inject bogus
+      DNS responses. However, to provide stronger protection from active
+      attackers pretending to be the server, the server itself needs to be
+      authenticated.</t>
+
+      <t>To authenticate the server providing DNS privacy, the DNS client
+      needs to be configured with the names or IP addresses of those DNS
+      privacy servers. The server certificate MUST contain DNS-ID
+      (subjectAltName) as described in Section 4.1 of <xref
+      target="RFC6125"></xref>. DNS names and IP addresses can be contained in
+      the subjectAltName entries. The client MUST use the rules and guidelines
+      given in section 6 of <xref target="RFC6125"></xref> to validate the DNS
+      server identity.</t>
+
+      <figure>
+        <preamble>This could be implemented by adding the certificate name to
+        the /etc/resolv.conf file, such as below:</preamble>
+
+        <artwork align="left"><![CDATA[
+  nameserver 8.8.8.8
+  certificate google-public-dns.google.com
+  nameserver 208.67.220.220
+  certificate resolver.opendns.com
+]]></artwork>
+      </figure>
+
+      <t>For DNS privacy servers that don't have a certificate trust chain
+      (e.g., because they are on a home network or a corporate network), the
+      configured list of DNS privacy servers can contain the Subject Public
+      Key Info (SPKI) fingerprint of the DNS privacy server (i.e., a simple
+      whitelist of name and SPKI fingerprint). The public key is used for the
+      same reasons HTTP pinning <xref target="RFC7469"></xref> uses the public
+      key. Raw public key-based authentication mechanism defined in <xref
+      target="RFC7250"></xref> can be also used to authenticate the DNS
+      server.</t>
+
+      <figure>
+        <preamble>This could be implemented by adding the SPKI fingerprint to
+        the /etc/resolv.conf file, such as below (line split for Internet
+        Draft formatting):</preamble>
+
+        <artwork><![CDATA[
+  nameserver 192.168.1.1
+  sha256 : "d6qzRu9zOECb90Uez27xWltNsj0e1Md7GkYYkVoZWmM="]]></artwork>
+      </figure>
+
+      <t>The only algorithm considered at this time is "sha256", i.e., the
+      hash algorithm SHA256 <xref target="RFC6234"></xref>; additional
+      algorithms may be allowed for use in this context in the future. The
+      quoted-string is a sequence of base 64 digits: the base64-encoded SPKI
+      Fingerprint <xref target="RFC4648"></xref>.</t>
+    </section>
+
+    <section title="Common problems with DNS Privacy">
+      <t>This section describes problems common to any DNS privacy solution.
+      To achieve DNS privacy an encrypted and integrity-protected channel is
+      needed between the client and server. This channel can be blocked, and
+      the client needs to react to such blockages. The encrypted traffic is
+      not normal DNS traffic, but rather is a cryptographic handshake followed
+      by encrypted payloads. There can be firewalls, other security devices,
+      or intercepting DNS proxies which block the non-DNS traffic or otherwise
+      react negatively (e.g., quarantining the host for suspicious
+      behavior).</t>
+
+      <t>Using DNS privacy with an authenticated server is most preferred, DNS
+      privacy with an unauthenticated server is next preferred, and plain DNS
+      is least preferred. This section gives a non-normative discussion on
+      common behaviors and choices.</t>
+
+      <t>An implementation MAY attempt to obtain DNS privacy by contacting DNS
+      servers on the local network (provided by DHCP) and on the Internet, and
+      make those attempts in parallel to reduce user impact. If DNS privacy
+      cannot be successfully negotiated for whatever reason, the client can do
+      three things: <list style="numbers">
+          <t>refuse to send DNS queries on this network, which means the
+          client cannot make effective use of this network, as modern networks
+          require DNS; or,</t>
+
+          <t>use opportunistic security, as described in <xref
+          target="RFC7435"></xref>. or,</t>
+
+          <t>send plain DNS queries on this network, which means no DNS
+          privacy is provided.</t>
+        </list></t>
+
+      <t>Heuristics can improve this situation, but only to a degree (e.g.,
+      previous success of DNS privacy on this network may be reason to alert
+      the user about failure to establish DNS privacy on this network now).
+      Still, the client (in cooperation with the end user) has to decide to
+      use the network without the protection of DNS privacy.</t>
+    </section>
+
+    <section anchor="IANA" title="IANA Considerations">
+      <t>None.</t>
+    </section>
+
+    <section anchor="security" title="Security Considerations">
+      <t>With opportunistic privacy, a client might learn of a (D)TLS-enabled
+      recursive DNS resolver from an untrusted source (such as DHCP while
+      roaming), it might or might not validate the TLS certificate. These
+      choices maximize availability and performance, but they leave the client
+      vulnerable to on-path attacks that remove privacy. Opportunistic privacy
+      can be used by any current client, but it only provides guaranteed
+      privacy when there are no on-path active attackers.</t>
+
+      <t>Security considerations discussed in DTLS <xref
+      target="RFC7435"></xref> and TLS <xref target="RFC7435"></xref> apply to
+      this document.</t>
+    </section>
+
+    <section anchor="ack" title="Acknowledgements">
+      <t>TODO</t>
+    </section>
+  </middle>
+
+  <back>
+    <references title="Normative References">
+      <?rfc include="reference.RFC.2119"?>
+
+      <?rfc include="reference.RFC.7525"?>
+
+      <?rfc include="reference.RFC.6125"
+?>
+
+      <?rfc include="reference.RFC.4648"
+?>
+
+      <?rfc include="reference.RFC.7435"
+?>
+
+      <?rfc include="reference.RFC.6234"
+?>
+
+      <?rfc include="reference.RFC.7469"?>
+
+      <?rfc include="reference.RFC.5246"?>
+
+      <?rfc include="reference.RFC.6347"?>
+
+      <?rfc include="reference.RFC.7250"?>
+
+      <?rfc include='reference.I-D.ietf-dprive-dns-over-tls' ?>
+
+      <?rfc include="reference.I-D.ietf-dprive-dnsodtls"?>
+    </references>
+
+    <references title="Informative References">
+      <?rfc include="reference.I-D.ietf-tls-falsestart"?>
+
+      <?rfc include="reference.I-D.ietf-tls-cached-info"?>
+
+      <?rfc include="reference.RFC.5077"?>
+    </references>
+  </back>
+</rfc>

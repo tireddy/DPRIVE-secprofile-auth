@@ -1,0 +1,448 @@
+
+
+
+
+DPRIVE                                                          T. Reddy
+Internet-Draft                                                     Cisco
+Intended status: Standards Track                            S. Dickinson
+Expires: May 21, 2016                      Sinodun Internet Technologies
+                                                                 D. Wing
+                                                                P. Patil
+                                                                   Cisco
+                                                       November 18, 2015
+
+
+         DPRIVE TLS/DTLS Profile and DNS server authentication
+               draft-reddy-dprive-dns-profile-and-auth-00
+
+Abstract
+
+   This document defines a Transport Layer Security (TLS) and Datagram
+   TLS (DTLS) 1.2 profile for providing DNS privacy, and mechanisms the
+   DNS client can use to authenticate the server providing DNS privacy.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at http://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on May 21, 2016.
+
+Copyright Notice
+
+   Copyright (c) 2015 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (http://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+   include Simplified BSD License text as described in Section 4.e of
+
+
+
+Reddy, et al.             Expires May 21, 2016                  [Page 1]
+
+Internet-Draft  DPRIVE (D)TLS profile and DNS server auth  November 2015
+
+
+   the Trust Legal Provisions and are provided without warranty as
+   described in the Simplified BSD License.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
+   2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   2
+   3.  (D)TLS Profile  . . . . . . . . . . . . . . . . . . . . . . .   2
+   4.  Authenticating the DNS Privacy Server . . . . . . . . . . . .   3
+   5.  Common problems with DNS Privacy  . . . . . . . . . . . . . .   4
+   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   5
+   7.  Security Considerations . . . . . . . . . . . . . . . . . . .   5
+   8.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .   5
+   9.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   5
+     9.1.  Normative References  . . . . . . . . . . . . . . . . . .   6
+     9.2.  Informative References  . . . . . . . . . . . . . . . . .   7
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   7
+
+1.  Introduction
+
+   The DPRIVE working group has two active documents that provide DNS
+   confidentiality, DNS over DTLS [I-D.ietf-dprive-dnsodtls] and DNS
+   over TLS [I-D.ietf-dprive-dns-over-tls].
+
+   This document defines a profile of DTLS 1.2 [RFC6347] and TLS 1.2
+   [RFC5246] that offers DNS privacy.  This profile defines the
+   configuration options and protocol extensions to perform connection
+   handshakes with the fewest round trips while maintaining privacy.  It
+   also discusses mechanisms the DNS client can use to authenticate the
+   server providing DNS privacy.
+
+2.  Terminology
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in
+   [RFC2119].
+
+3.  (D)TLS Profile
+
+   This section defines the profile of DNS over DTLS and of DNS over
+   TLS.  Implementations compliant with this profile MUST implement all
+   of the following items:
+
+   o  Raw public keys [RFC7250], which reduce the size of the
+      ServerHello, and cannot obtain certificates (e.g., DNS resolvers
+      on private networks).  DNS client and DNS resolver need to support
+      [RFC7250], and raw public key-based authentication mechanism
+
+
+
+Reddy, et al.             Expires May 21, 2016                  [Page 2]
+
+Internet-Draft  DPRIVE (D)TLS profile and DNS server auth  November 2015
+
+
+      defined in [RFC7250] can be used by the client to authenticate the
+      DNS resolver.  DNS client needs to be configured with the
+      SubjectPublicKeyInfo fingerprint of the DNS resolver, and;
+
+   o  The interaction between the DNS client and the DNS server requires
+      Transport Layer Security (TLS) and Datagram Transport Layer
+      Security (DTLS) with a ciphersuite offering confidentiality
+      protection and the guidance given in [RFC7525] must be followed to
+      avoid attacks on (D)TLS.
+
+   It is RECOMMENDED to implement the following items to improve
+   performance:
+
+   o  TLS session resumption without server-side state [RFC5077], which
+      eliminates the need for the server to retain cryptographic state
+      for longer than necessary, and;
+
+   o  TLS False Start [I-D.ietf-tls-falsestart], which reduces round-
+      trips by allowing the TLS second flight of messages
+      (ChangeCipherSpec) to also contain the (encrypted) DNS query, and;
+
+   o  Cached Information Extension [I-D.ietf-tls-cached-info], which
+      avoids transmitting the server's certificate and certificate chain
+      if the client has cached that information from a previous TLS
+      handshake.
+
+4.  Authenticating the DNS Privacy Server
+
+   DNS privacy requires encrypting the query (and response) from passive
+   attacks.  Such encryption typically provides integrity protection as
+   a side-effect, which means on-path attackers cannot simply inject
+   bogus DNS responses.  However, to provide stronger protection from
+   active attackers pretending to be the server, the server itself needs
+   to be authenticated.
+
+   To authenticate the server providing DNS privacy, the DNS client
+   needs to be configured with the names or IP addresses of those DNS
+   privacy servers.  The server certificate MUST contain DNS-ID
+   (subjectAltName) as described in Section 4.1 of [RFC6125].  DNS names
+   and IP addresses can be contained in the subjectAltName entries.  The
+   client MUST use the rules and guidelines given in section 6 of
+   [RFC6125] to validate the DNS server identity.
+
+
+
+
+
+
+
+
+
+Reddy, et al.             Expires May 21, 2016                  [Page 3]
+
+Internet-Draft  DPRIVE (D)TLS profile and DNS server auth  November 2015
+
+
+   This could be implemented by adding the certificate name to the /etc/
+   resolv.conf file, such as below:
+
+     nameserver 8.8.8.8
+     certificate google-public-dns.google.com
+     nameserver 208.67.220.220
+     certificate resolver.opendns.com
+
+   For DNS privacy servers that don't have a certificate trust chain
+   (e.g., because they are on a home network or a corporate network),
+   the configured list of DNS privacy servers can contain the Subject
+   Public Key Info (SPKI) fingerprint of the DNS privacy server (i.e., a
+   simple whitelist of name and SPKI fingerprint).  The public key is
+   used for the same reasons HTTP pinning [RFC7469] uses the public key.
+   Raw public key-based authentication mechanism defined in [RFC7250]
+   can be also used to authenticate the DNS server.
+
+   This could be implemented by adding the SPKI fingerprint to the /etc/
+   resolv.conf file, such as below (line split for Internet Draft
+   formatting):
+
+     nameserver 192.168.1.1
+     sha256 : "d6qzRu9zOECb90Uez27xWltNsj0e1Md7GkYYkVoZWmM="
+
+   The only algorithm considered at this time is "sha256", i.e., the
+   hash algorithm SHA256 [RFC6234]; additional algorithms may be allowed
+   for use in this context in the future.  The quoted-string is a
+   sequence of base 64 digits: the base64-encoded SPKI Fingerprint
+   [RFC4648].
+
+5.  Common problems with DNS Privacy
+
+   This section describes problems common to any DNS privacy solution.
+   To achieve DNS privacy an encrypted and integrity-protected channel
+   is needed between the client and server.  This channel can be
+   blocked, and the client needs to react to such blockages.  The
+   encrypted traffic is not normal DNS traffic, but rather is a
+   cryptographic handshake followed by encrypted payloads.  There can be
+   firewalls, other security devices, or intercepting DNS proxies which
+   block the non-DNS traffic or otherwise react negatively (e.g.,
+   quarantining the host for suspicious behavior).
+
+   Using DNS privacy with an authenticated server is most preferred, DNS
+   privacy with an unauthenticated server is next preferred, and plain
+   DNS is least preferred.  This section gives a non-normative
+   discussion on common behaviors and choices.
+
+
+
+
+
+Reddy, et al.             Expires May 21, 2016                  [Page 4]
+
+Internet-Draft  DPRIVE (D)TLS profile and DNS server auth  November 2015
+
+
+   An implementation MAY attempt to obtain DNS privacy by contacting DNS
+   servers on the local network (provided by DHCP) and on the Internet,
+   and make those attempts in parallel to reduce user impact.  If DNS
+   privacy cannot be successfully negotiated for whatever reason, the
+   client can do three things:
+
+   1.  refuse to send DNS queries on this network, which means the
+       client cannot make effective use of this network, as modern
+       networks require DNS; or,
+
+   2.  use opportunistic security, as described in [RFC7435]. or,
+
+   3.  send plain DNS queries on this network, which means no DNS
+       privacy is provided.
+
+   Heuristics can improve this situation, but only to a degree (e.g.,
+   previous success of DNS privacy on this network may be reason to
+   alert the user about failure to establish DNS privacy on this network
+   now).  Still, the client (in cooperation with the end user) has to
+   decide to use the network without the protection of DNS privacy.
+
+6.  IANA Considerations
+
+   None.
+
+7.  Security Considerations
+
+   With opportunistic privacy, a client might learn of a (D)TLS-enabled
+   recursive DNS resolver from an untrusted source (such as DHCP while
+   roaming), it might or might not validate the TLS certificate.  These
+   choices maximize availability and performance, but they leave the
+   client vulnerable to on-path attacks that remove privacy.
+   Opportunistic privacy can be used by any current client, but it only
+   provides guaranteed privacy when there are no on-path active
+   attackers.
+
+   Security considerations discussed in DTLS [RFC7435] and TLS [RFC7435]
+   apply to this document.
+
+8.  Acknowledgements
+
+   TODO
+
+9.  References
+
+
+
+
+
+
+
+Reddy, et al.             Expires May 21, 2016                  [Page 5]
+
+Internet-Draft  DPRIVE (D)TLS profile and DNS server auth  November 2015
+
+
+9.1.  Normative References
+
+   [I-D.ietf-dprive-dns-over-tls]
+              Zi, Z., Zhu, L., Heidemann, J., Mankin, A., Wessels, D.,
+              and P. Hoffman, "DNS over TLS: Initiation and Performance
+              Considerations", draft-ietf-dprive-dns-over-tls-01 (work
+              in progress), October 2015.
+
+   [I-D.ietf-dprive-dnsodtls]
+              Reddy, T., Wing, D., and P. Patil, "DNS over DTLS
+              (DNSoD)", draft-ietf-dprive-dnsodtls-02 (work in
+              progress), October 2015.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <http://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC4648]  Josefsson, S., "The Base16, Base32, and Base64 Data
+              Encodings", RFC 4648, DOI 10.17487/RFC4648, October 2006,
+              <http://www.rfc-editor.org/info/rfc4648>.
+
+   [RFC5246]  Dierks, T. and E. Rescorla, "The Transport Layer Security
+              (TLS) Protocol Version 1.2", RFC 5246,
+              DOI 10.17487/RFC5246, August 2008,
+              <http://www.rfc-editor.org/info/rfc5246>.
+
+   [RFC6125]  Saint-Andre, P. and J. Hodges, "Representation and
+              Verification of Domain-Based Application Service Identity
+              within Internet Public Key Infrastructure Using X.509
+              (PKIX) Certificates in the Context of Transport Layer
+              Security (TLS)", RFC 6125, DOI 10.17487/RFC6125, March
+              2011, <http://www.rfc-editor.org/info/rfc6125>.
+
+   [RFC6234]  Eastlake 3rd, D. and T. Hansen, "US Secure Hash Algorithms
+              (SHA and SHA-based HMAC and HKDF)", RFC 6234,
+              DOI 10.17487/RFC6234, May 2011,
+              <http://www.rfc-editor.org/info/rfc6234>.
+
+   [RFC6347]  Rescorla, E. and N. Modadugu, "Datagram Transport Layer
+              Security Version 1.2", RFC 6347, DOI 10.17487/RFC6347,
+              January 2012, <http://www.rfc-editor.org/info/rfc6347>.
+
+   [RFC7250]  Wouters, P., Ed., Tschofenig, H., Ed., Gilmore, J.,
+              Weiler, S., and T. Kivinen, "Using Raw Public Keys in
+              Transport Layer Security (TLS) and Datagram Transport
+              Layer Security (DTLS)", RFC 7250, DOI 10.17487/RFC7250,
+              June 2014, <http://www.rfc-editor.org/info/rfc7250>.
+
+
+
+Reddy, et al.             Expires May 21, 2016                  [Page 6]
+
+Internet-Draft  DPRIVE (D)TLS profile and DNS server auth  November 2015
+
+
+   [RFC7435]  Dukhovni, V., "Opportunistic Security: Some Protection
+              Most of the Time", RFC 7435, DOI 10.17487/RFC7435,
+              December 2014, <http://www.rfc-editor.org/info/rfc7435>.
+
+   [RFC7469]  Evans, C., Palmer, C., and R. Sleevi, "Public Key Pinning
+              Extension for HTTP", RFC 7469, DOI 10.17487/RFC7469, April
+              2015, <http://www.rfc-editor.org/info/rfc7469>.
+
+   [RFC7525]  Sheffer, Y., Holz, R., and P. Saint-Andre,
+              "Recommendations for Secure Use of Transport Layer
+              Security (TLS) and Datagram Transport Layer Security
+              (DTLS)", BCP 195, RFC 7525, DOI 10.17487/RFC7525, May
+              2015, <http://www.rfc-editor.org/info/rfc7525>.
+
+9.2.  Informative References
+
+   [I-D.ietf-tls-cached-info]
+              Santesson, S. and H. Tschofenig, "Transport Layer Security
+              (TLS) Cached Information Extension", draft-ietf-tls-
+              cached-info-20 (work in progress), October 2015.
+
+   [I-D.ietf-tls-falsestart]
+              Langley, A., Modadugu, N., and B. Moeller, "Transport
+              Layer Security (TLS) False Start", draft-ietf-tls-
+              falsestart-01 (work in progress), November 2015.
+
+   [RFC5077]  Salowey, J., Zhou, H., Eronen, P., and H. Tschofenig,
+              "Transport Layer Security (TLS) Session Resumption without
+              Server-Side State", RFC 5077, DOI 10.17487/RFC5077,
+              January 2008, <http://www.rfc-editor.org/info/rfc5077>.
+
+Authors' Addresses
+
+   Tirumaleswar Reddy
+   Cisco Systems, Inc.
+   Cessna Business Park, Varthur Hobli
+   Sarjapur Marathalli Outer Ring Road
+   Bangalore, Karnataka  560103
+   India
+
+   Email: tireddy@cisco.com
+
+
+
+
+
+
+
+
+
+
+Reddy, et al.             Expires May 21, 2016                  [Page 7]
+
+Internet-Draft  DPRIVE (D)TLS profile and DNS server auth  November 2015
+
+
+   Sara Dickinson
+   Sinodun Internet Technologies
+   Magdalen Centre
+   Oxford Science Park
+   Oxford  OX4 4GA
+   UK
+
+   Email: sara@sinodun.com
+
+
+   Dan Wing
+   Cisco Systems, Inc.
+   170 West Tasman Drive
+   San Jose, California  95134
+   USA
+
+   Email: dwing@cisco.com
+
+
+   Prashanth Patil
+   Cisco Systems, Inc.
+   Bangalore
+   India
+
+   Email: praspati@cisco.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Reddy, et al.             Expires May 21, 2016                  [Page 8]
